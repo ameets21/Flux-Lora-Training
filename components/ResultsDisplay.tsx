@@ -1,0 +1,109 @@
+import React, { useState } from 'react';
+import { TrainingResult, TrainingConfig } from '../types';
+import { SparklesIcon } from './icons/SparklesIcon';
+import { DownloadIcon } from './icons/DownloadIcon';
+
+interface ResultsDisplayProps {
+  result: TrainingResult;
+  config: TrainingConfig;
+  onGenerateMore: (prompt: string) => Promise<string[]>;
+  onReset: () => void;
+  isGenerating: boolean;
+}
+
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ result, config, onGenerateMore, onReset, isGenerating }) => {
+  const [prompt, setPrompt] = useState(`cinematic photo of a ${config.triggerWords} robot, high detail`);
+
+  const handleGenerateClick = async () => {
+    if (!prompt.trim() || isGenerating) return;
+    await onGenerateMore(prompt);
+  };
+
+  const handleDownload = () => {
+    // Simulate downloading the model file by providing the training configuration as a JSON file.
+    const modelData = {
+      loraModelFor: result.modelName,
+      trainingConfig: config,
+      note: "This is a simulated LoRA model file. It contains the configuration used for the training process."
+    };
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(modelData, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    const sanitizedModelName = result.modelName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `lora_model_${sanitizedModelName}.json`);
+    document.body.appendChild(downloadAnchorNode); // Required for Firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+
+  return (
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 shadow-lg backdrop-blur-sm">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold mb-2 text-slate-100 flex items-center justify-center gap-3">
+          <SparklesIcon className="w-8 h-8 text-yellow-300" />
+          Training Complete!
+        </h2>
+        <p className="text-lg text-slate-300">Your LoRA model <span className="font-semibold text-blue-400">'{result.modelName}'</span> is ready.</p>
+      </div>
+
+      <div className="mb-8">
+        <h3 className="text-xl font-semibold mb-4 text-slate-200">Generate New Samples</h3>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Enter a new prompt..."
+            className="w-full bg-slate-700 border border-slate-600 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isGenerating}
+          />
+          <button
+            onClick={handleGenerateClick}
+            disabled={isGenerating}
+            className="flex items-center justify-center bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-6 rounded-lg transition-all duration-200 disabled:bg-purple-800 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isGenerating ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Generating...
+              </>
+            ) : 'Generate'}
+          </button>
+        </div>
+        <p className="text-xs text-slate-500 mt-2">Tip: Use your trigger word <span className="font-mono text-blue-400">{config.triggerWords}</span> in the prompt for best results.</p>
+      </div>
+      
+      <h3 className="text-xl font-semibold mb-4 text-slate-200">Generated Images</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {result.sampleImages.map((image, index) => (
+          <div key={index} className="aspect-square bg-slate-700 rounded-lg overflow-hidden group">
+            <img src={image} alt={`Generated sample ${index + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
+        <button
+          onClick={onReset}
+          className="bg-slate-600 hover:bg-slate-500 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+        >
+          Train a New Model
+        </button>
+        <button
+          onClick={handleDownload}
+          className="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+        >
+          <DownloadIcon className="h-5 w-5" />
+          Download LoRA Model
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ResultsDisplay;

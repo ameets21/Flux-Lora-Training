@@ -1,0 +1,5 @@
+{
+  "name": "Flux LoRA Trainer",
+  "description": "A web application to simulate the process of fine-tuning a Flux model using LoRA. Upload your dataset, configure training parameters, and generate sample images with your new model.",
+  "requestFramePermissions": []
+}
